@@ -1,0 +1,13 @@
+{
+  "name": "Pull Sheet",
+  "short_name": "Pull Sheet",
+  "start_url": "./pull.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#1d2330",
+  "icons": [
+    { "src": "icon-pull-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-pull-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
