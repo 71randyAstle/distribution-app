@@ -1,13 +1,14 @@
 /*
  * Distribution app loader (GitHub Pages).
- * - Asks for a PIN once per phone and remembers it.
+ * - Asks for a PIN once per phone, trades it for a sign-in token, and remembers the token.
  * - Loads the page (order page or pull page) from the Apps Script data link.
  * - Stands in for google.script.run so the page code runs unchanged.
  * Add ?signout to the address to forget the PIN on this phone.
  */
 (function () {
   var API = 'https://script.google.com/macros/s/AKfycbxJZWBBRDOC5oTuUv6DprViHznEY3YdTc5tX027SkANMDTxX-N9ALnUQw6LJiK0HyKEXg/exec';
-  var PIN_KEY = 'dist_pin';
+  var TOK_KEY = 'dist_tok';
+  var OLD_PIN_KEY = 'dist_pin';
   var PAGE_KEY = 'dist_page_';
 
   function store(k, v) {
@@ -17,18 +18,25 @@
     try { return localStorage.getItem(k); } catch (e) { return null; }
   }
 
-  function post(fn, args) {
+  function send(body) {
     return fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ pin: read(PIN_KEY) || '', fn: fn, args: args || [] })
+      body: JSON.stringify(body)
     }).then(function (r) {
       return r.json().catch(function () { throw new Error('The sheet did not answer. Try again.'); });
     }).then(function (d) {
       if (d && d.ok) return d.result;
       var err = new Error((d && d.error) || 'Something went wrong');
-      if (d && d.auth) { err.auth = true; signedOut('That PIN is no longer active. Enter your PIN.'); }
+      if (d && d.auth) err.auth = true;
       throw err;
+    });
+  }
+
+  function post(fn, args) {
+    return send({ tok: read(TOK_KEY) || '', fn: fn, args: args || [] }).catch(function (e) {
+      if (e && e.auth) signedOut('Please enter your PIN again.');
+      throw e;
     });
   }
 
@@ -101,7 +109,7 @@
   var PAGE = '';
 
   function signedOut(msg) {
-    store(PIN_KEY, null);
+    store(TOK_KEY, null);
     base(TITLE);
     var m = document.getElementById('gx-main');
     m.innerHTML = '<div id="gx-box"><p>Enter your PIN. This phone will remember it.</p>' +
@@ -116,14 +124,16 @@
       if (!pin) { errBox.textContent = 'Enter your PIN.'; return; }
       go.disabled = true;
       errBox.textContent = '';
-      store(PIN_KEY, pin);
-      post('page', [PAGE]).then(function (r) {
+      send({ fn: 'signin', pin: pin }).then(function (r) {
+        store(TOK_KEY, r.tok);
+        return post('page', [PAGE]);
+      }).then(function (r) {
         store(PAGE_KEY + PAGE, r.html);
         show(r.html);
       }, function (e) {
         go.disabled = false;
-        if (e && e.auth) { signedOut('PIN not recognized. Try again.'); return; }
-        store(PIN_KEY, null);
+        input.value = '';
+        if (e && e.auth) { errBox.textContent = e.message === 'PIN not recognized' ? 'PIN not recognized. Try again.' : e.message; return; }
         errBox.textContent = 'Could not reach the sheet (no signal?). Try again.';
       });
     }
@@ -135,11 +145,13 @@
   window.startPage = function (page, title) {
     PAGE = page;
     TITLE = title;
+    if (read(OLD_PIN_KEY)) store(OLD_PIN_KEY, null);
     if (/[?&]signout\b/.test(location.search)) {
-      store(PIN_KEY, null);
+      if (read(TOK_KEY)) send({ tok: read(TOK_KEY), fn: 'signout' }).catch(function () {});
+      store(TOK_KEY, null);
       history.replaceState(null, '', location.pathname);
     }
-    if (!read(PIN_KEY)) { signedOut(''); return; }
+    if (!read(TOK_KEY)) { signedOut(''); return; }
     base(title);
     document.getElementById('gx-main').innerHTML = '<div class="gx-load">Loading…</div>';
     post('page', [page]).then(function (r) {
