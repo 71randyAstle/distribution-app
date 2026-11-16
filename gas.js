@@ -84,6 +84,30 @@
       sc.textContent = s.textContent;
       document.body.appendChild(sc);
     });
+    addSwitch();
+  }
+
+  // Orders | Pull Sheet switch in the header, shown on the store list screens only
+  // (it hides whenever the page shows its Back button).
+  var SW_CSS = [
+    '#gx-sw{display:none;flex:none;background:#394150;border-radius:9px;padding:3px;gap:2px}',
+    '#backBtn[style*="none"] ~ #gx-sw{display:flex}',
+    '#gx-sw a{color:#c9ced8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 9px;border-radius:7px;white-space:nowrap}',
+    '#gx-sw a.on{background:#fff;color:#1d2330}'
+  ].join('');
+  function addSwitch() {
+    var h = document.querySelector('header');
+    if (!h || document.getElementById('gx-sw')) return;
+    var st = document.createElement('style');
+    st.setAttribute('data-gx-page', '1');
+    st.textContent = SW_CSS;
+    document.head.appendChild(st);
+    var d = document.createElement('div');
+    d.id = 'gx-sw';
+    d.innerHTML = PAGE === 'pull'
+      ? '<a href="./">Orders</a><a class="on">Pull Sheet</a>'
+      : '<a class="on">Orders</a><a href="pull.html">Pull Sheet</a>';
+    h.appendChild(d);
   }
 
   var CSS = [
