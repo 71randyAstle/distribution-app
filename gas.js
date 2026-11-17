@@ -170,6 +170,13 @@
   }
 
   window.startPage = function (page, title) {
+    // The Order Hub iPhone app starts on the pull page; send its first open of each launch to the order page
+    try {
+      if (window.ORDER_HUB_APP && !sessionStorage.getItem('gx_opened')) {
+        sessionStorage.setItem('gx_opened', '1');
+        if (page === 'pull' && !/[?&]store=/.test(location.search)) { location.replace('./'); return; }
+      }
+    } catch (e) {}
     PAGE = page;
     TITLE = title;
     if (read(OLD_PIN_KEY)) store(OLD_PIN_KEY, null);
