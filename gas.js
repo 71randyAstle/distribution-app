@@ -12,6 +12,9 @@
   var PAGE_KEY = 'dist_page_';
   var PAGE_TS = 'dist_page_t_';
   var PAGE_MAX_AGE = 30 * 60 * 1000; // re-check the page code in the background after 30 minutes
+  // Bump PAGE_STAMP (and gas.js?v= in index.html and pull.html) to make every phone drop its kept page copy on its next open
+  var PAGE_STAMP = '2026-11-17a';
+  var STAMP_KEY = 'dist_page_stamp';
 
   function store(k, v) {
     try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {}
@@ -192,6 +195,7 @@
       // also rebuild the script's kept copies of the sheet (only allowed for Randy)
       send({ tok: read(TOK_KEY) || '', fn: 'refresh' }).catch(function () {});
     }
+    if (read(STAMP_KEY) !== PAGE_STAMP) { force = true; store(STAMP_KEY, PAGE_STAMP); }
     var cached = read(PAGE_KEY + page), ts = Number(read(PAGE_TS + page) || 0);
     if (cached && ts && !force) {
       // open instantly from the copy kept on this phone; fetch a newer copy quietly for next time
