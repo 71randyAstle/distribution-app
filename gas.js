@@ -180,7 +180,11 @@
     }
     if (!read(TOK_KEY)) { signedOut(''); return; }
     var force = /[?&]refresh\b/.test(location.search);
-    if (force) history.replaceState(null, '', location.pathname);
+    if (force) {
+      history.replaceState(null, '', location.pathname);
+      // also rebuild the script's kept copies of the sheet (only allowed for Randy)
+      send({ tok: read(TOK_KEY) || '', fn: 'refresh' }).catch(function () {});
+    }
     var cached = read(PAGE_KEY + page), ts = Number(read(PAGE_TS + page) || 0);
     if (cached && ts && !force) {
       // open instantly from the copy kept on this phone; fetch a newer copy quietly for next time
