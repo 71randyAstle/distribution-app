@@ -10,6 +10,8 @@
   var TOK_KEY = 'dist_tok';
   var OLD_PIN_KEY = 'dist_pin';
   var PAGE_KEY = 'dist_page_';
+  var PAGE_TS = 'dist_page_t_';
+  var PAGE_MAX_AGE = 30 * 60 * 1000; // re-check the page code in the background after 30 minutes
 
   function store(k, v) {
     try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {}
@@ -153,6 +155,7 @@
         return post('page', [PAGE]);
       }).then(function (r) {
         store(PAGE_KEY + PAGE, r.html);
+        store(PAGE_TS + PAGE, String(Date.now()));
         show(r.html);
       }, function (e) {
         go.disabled = false;
@@ -176,10 +179,23 @@
       history.replaceState(null, '', location.pathname);
     }
     if (!read(TOK_KEY)) { signedOut(''); return; }
+    var force = /[?&]refresh\b/.test(location.search);
+    if (force) history.replaceState(null, '', location.pathname);
+    var cached = read(PAGE_KEY + page), ts = Number(read(PAGE_TS + page) || 0);
+    if (cached && ts && !force) {
+      // open instantly from the copy kept on this phone; fetch a newer copy quietly for next time
+      show(cached);
+      if (Date.now() - ts > PAGE_MAX_AGE) post('page', [page]).then(function (r) {
+        store(PAGE_KEY + page, r.html);
+        store(PAGE_TS + page, String(Date.now()));
+      }, function () {});
+      return;
+    }
     base(title);
     document.getElementById('gx-main').innerHTML = '<div class="gx-load">Loading…</div>';
     post('page', [page]).then(function (r) {
       store(PAGE_KEY + page, r.html);
+      store(PAGE_TS + page, String(Date.now()));
       show(r.html);
     }, function (e) {
       if (e && e.auth) return;
