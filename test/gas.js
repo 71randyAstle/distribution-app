@@ -43,7 +43,7 @@
   var PAGE_TS = 'dist_page_t_';
   var PAGE_MAX_AGE = 30 * 60 * 1000; // re-check the page code in the background after 30 minutes
   // Bump PAGE_STAMP (and gas.js?v= in index.html and pull.html) to make every phone drop its kept page copy on its next open
-  var PAGE_STAMP = '2026-11-21d';
+  var PAGE_STAMP = '2026-11-21e';
   var STAMP_KEY = 'dist_page_stamp';
 
   function store(k, v) {
